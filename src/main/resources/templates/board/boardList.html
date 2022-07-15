@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="www.thymeleaf.org">
+<script src="http://code.jquery.com/jquery-latest.js"></script>
+<style>
+    .write {
+        width: 200px;
+        border: 1px solid #b8064d;
+        background-color: #f8e1eb;
+        position: absolute;
+        top: 10px;
+        right: 100px;
+        color:#b8064d;
+        padding-left:10px
+}
+
+.class1 {
+color: red;
+}
+
+.class1 active:active {
+    color: red;
+}
+</style>
+<head>
+    <meta charset="UTF-8">
+    <title>Board List</title>
+</head>
+
+<script type="text/javascript" th:inline="javascript">
+
+$(function(){
+       $("#keyword").keyup(function (event) {
+            regexp = /[ \{\}\[\]\/?.,;:|\)*~`!^\-_+┼<>@\#$%&\'\"\\\(\=]/gi;
+            v = $(this).val();
+            if (regexp.test(v)) {
+                alert("특수문자 사용 금지.");
+                $(this).val(v.replace(regexp, ''));
+            }
+        });
+});
+
+
+function fn_prev(page, range, rangeSize) {
+    var page = ((range - 2) * rangeSize) + 1;
+    var range = range - 1;
+
+    var url = "/board/getBoardList";
+    url = url + "?page=" + page;
+    url = url + "&range=" + range;
+    url = url + "&searchType=" + $('#searchType').val();
+
+    location.href = url;
+}
+
+function fn_pageInfo(page, range) {
+
+    var url = "/board/getBoardList";
+    url = url + "?page=" + page;
+    url = url + "&range=" + range;
+    url = url + "&searchType=" + $('#searchType').val();
+
+    location.href = url;
+}
+
+function fn_next(page, range, rangeSize) {
+    var page = parseInt((range * rangeSize)) + 1;
+    var range = parseInt(range) + 1;
+
+    var url = "/board/getBoardList";
+    url = url + "?page=" + page;
+    url = url + "&range=" + range;
+    url = url + "&searchType=" + $('#searchType').val();
+
+    location.href = url;
+}
+
+$(document).on('click', '#btnSearch', function(){
+    var url = "/board/getBoardList";
+    url = url + "?searchType=" + $('#searchType').val();
+    url = url + "&keyword=" + $('#keyword').val();
+    location.href = url;
+});
+
+function fn_title(idx, pw) {
+
+    var pass1 = prompt('비회원 접근시 암호를 입력해야 합니다.','암호를 입력하세요');
+
+    if(pass1) {
+       if (pass1 == pw) {
+            var path = "/board/getBoardDetail";
+            url = path + "/" + idx;
+            location.href = url;
+        } else {
+            alert('비밀번호가 틀렸습니다.');
+        }
+    }
+}
+
+</script>
+
+<body>
+<H3>Board List</H3>
+<div>
+    <th:block th:if="${session.LOGIN_MEMBER != null}">
+        <div><p th:text="|${session.LOGIN_MEMBER} 님 반갑습니다.|">반갑습니다.</p></div>
+        <div><a th:href="@{/login/logout}">로그아웃</a></div>
+    </th:block>
+    <th:block th:unless="${session.LOGIN_MEMBER != null}">
+        <div><p th:text="|로그인이 안된 사용자 입니다.|">세션없음</p></div>
+        <div><a th:href="@{/login/loginPage}">로그인</a></div>
+    </th:block>
+</div>
+<table style="width:100%">
+    <tr style="background-color:lightgrey">
+        <th>게시글번호</th>
+        <th>제목</th>
+        <th>작성자</th>
+        <th>조회수</th>
+        <th>작성일</th>
+    </tr>
+    <tr th:each="list : ${boardList}">
+        <td th:text="${list.rn}">게시글번호</td>
+        <th:block th:if="${session.LOGIN_MEMBER} != null">
+            <td><a th:href="@{/board/getBoardDetail/{idx}(idx = ${list.idx})}" th:text="${list.title}">제목</a></td>
+        </th:block>`
+        <th:block th:unless="${session.LOGIN_MEMBER} != null">
+            <td><a href="#" th:onclick="fn_title([[${list.idx}]],[[${list.boardPw}]])" th:text="${list.title}">제목</a></td>
+        </th:block>
+        <td th:text="${list.writer}">작성자</td>
+        <td th:text="${list.viewCnt}">조회수</td>
+        <td th:text="${list.regDate}">작성일</td>
+    </tr>
+
+    <div id="pageInfoBox">
+        <ul class="pageInfo">
+            <td th:if="${pageInfo.isPrev()}">
+                <li class="page-item">
+                    <a class="page-link" href="#" th:onclick="fn_prev([[${pageInfo.page}]],[[${pageInfo.range}]],[[${pageInfo.rangeSize}]],[[${pageInfo.searchType}]],[[${pageInfo.keyword}]]);">Previous</a>
+                </li>
+            </td>
+            <td th:each="num : ${#numbers.sequence(pageInfo.startPage, pageInfo.endPage)}">
+                <li class="class1 active" th:classappend="${pageInfo.startPage == num} ? 'active' : ''">
+                    <a href="#" th:onclick="fn_pageInfo([[${num}]],[[${pageInfo.range}]],[[${pageInfo.rangeSize}]]);" th:text="${num}"></a>
+                </li>
+            <td th:if="${pageInfo.isNext()}">
+                <li><a href="#" th:onclick="fn_next([[${pageInfo.page}]],[[${pageInfo.range}]],[[${pageInfo.rangeSize}]],[[${pageInfo.searchType}]],[[${pageInfo.keyword}]]);">Next</a></li>
+            </td>
+        </ul>
+    </div>
+
+</table>
+
+
+
+<div class="write">
+    <th:block th:if="${session.LOGIN_MEMBER != null}">
+        <a th:href="@{/board/getBoardForm(gubun = ${session.LOGIN_MEMBER})}" th:text="글쓰기"></a>
+    </th:block>
+    <th:block th:unless="${session.LOGIN_MEMBER != null}">
+        <a th:href="@{/board/getBoardForm}" th:text="글쓰기"></a>
+    </th:block>
+</div>
+<div padding="100px;">
+    <div class="w100" style="padding-right:10px">
+        <select class="form-control form-control-sm" name="searchType" id="searchType">
+                <option th:text="${search}"></option>
+                <option value="title">title</option>
+                <option value="content">content</option>
+                <option value="writer">writer</option>
+        </select>
+    </div>
+
+    <div style="padding-right:10px">
+       <input type="text" name="keyword" id="keyword">
+    </div>
+    <div>
+        <button name="btnSearch" id="btnSearch">검색</button>
+    </div>
+</div>
+
+</body>
+</html>
